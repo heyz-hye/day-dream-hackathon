@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI Alzheimer's Detection & Prevention Platform</title>
+    <title>AI Alzheimer's Detection & Clinical Staging</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         :root {
@@ -11,6 +11,7 @@
             --secondary: #3b82f6;
             --accent: #ef4444;
             --highlight: #fbbf24;
+            --warning: #f97316;
             --success: #10b981;
             --bg: #f8fafc;
             --surface: #ffffff;
@@ -98,12 +99,20 @@
         }
         .action-item h4 { color: var(--primary); margin-bottom: 5px; }
         .action-item p { color: var(--text-light); font-size: 0.95rem; }
+
+        .med-card {
+            background: #ffffff; border: 1px solid var(--border); padding: 12px;
+            border-radius: 6px; margin-bottom: 10px; margin-top: 10px;
+        }
+        .med-card a { color: var(--secondary); font-weight: bold; text-decoration: none; }
+        .med-card a:hover { text-decoration: underline; }
+        .med-warning { color: var(--accent); font-size: 0.85rem; display: block; margin-top: 4px; }
     </style>
 </head>
 <body>
 
     <header>
-        <h1>NeuroAI: Alzheimer's Predictive Platform</h1>
+        <h1>NeuroAI: Alzheimer's Clinical Detection Platform</h1>
         <p class="mission">"To democratize early Alzheimer's detection by harnessing multimodal artificial intelligence to identify predictive biological, structural, and behavioral patterns years before clinical symptoms emerge, empowering proactive intervention and precision care."</p>
     </header>
 
@@ -156,8 +165,7 @@
                 </div>
             </div>
 
-            <!-- Changed to type="button" to handle validation purely in JS -->
-            <button type="button" id="calcBtn" class="btn">Calculate AI Risk & Enter Dashboard</button>
+            <button type="button" id="calcBtn" class="btn">Calculate Risk & Enter Dashboard</button>
         </form>
     </div>
 
@@ -168,18 +176,19 @@
             <div class="card" style="border-top: 4px solid var(--highlight); background: #fdfce8;">
                 <h2 style="color: #b45309;">Patient Profile</h2>
                 <p><strong>Age:</strong> <span id="displayAge"></span> | <strong>Gender:</strong> <span id="displayGender"></span></p>
-                <p><strong>AI Risk Score:</strong> <strong style="color: var(--accent); font-size: 1.2rem;" id="displayRisk"></strong></p>
+                <p style="margin-top: 10px;"><strong>AI Risk Score:</strong> <span style="color: var(--accent); font-size: 1.2rem; font-weight: bold;" id="displayRisk"></span></p>
+                <p><strong>Clinical Stage:</strong> <span id="displayStage" style="font-weight: bold;"></span></p>
                 
                 <!-- Navigation Buttons -->
                 <button onclick="showView('dashboard')" class="btn btn-outline" style="margin-top: 20px;">View Cohort Dashboard</button>
-                <button onclick="showView('actionPlan')" class="btn btn-action">View Personalized Action Plan</button>
+                <button onclick="showView('actionPlan')" class="btn btn-action">View Staging & Treatment Plan</button>
                 <button onclick="location.reload()" class="btn" style="background: var(--text-light);">Start New Assessment</button>
             </div>
 
             <div class="card">
                 <h2>Clinical Partners</h2>
                 <ul>
-                    <li><strong>Davos Alzheimer's Collaborative (DAC):</strong> Global biomarker data sharing.</li>
+                    <li><strong>Davos Alzheimer's Collaborative:</strong> Global biomarker data sharing.</li>
                     <li><strong>ADNI:</strong> Gold-standard repository for MRI/PET data.</li>
                     <li><strong>Tempus AI / Regenstrief:</strong> Applying multimodal AI to genomic and EHR data.</li>
                 </ul>
@@ -190,7 +199,7 @@
         <div class="right-col">
             
             <!-- DASHBOARD VIEW -->
-            <div id="dashboard-view" class="card">
+            <div id="dashboard-view" class="card hidden">
                 <h2>Population Cohort Explorer</h2>
                 <div class="kpi-container">
                     <div class="kpi-box">
@@ -229,9 +238,9 @@
             </div>
 
             <!-- ACTION PLAN VIEW -->
-            <div id="actionplan-view" class="card hidden">
-                <h2>AI-Generated Cognitive Care Plan</h2>
-                <p style="margin-bottom: 20px; color: var(--text-light);">Based on the patient's specific health profile and AI risk assessment, the following proactive interventions are recommended to support brain health and build cognitive reserve.</p>
+            <div id="actionplan-view" class="card">
+                <h2>AI-Generated Clinical Staging & Care Plan</h2>
+                <p id="stageDescription" style="margin-bottom: 20px; color: var(--text-light);"></p>
                 
                 <div id="dynamic-recommendations">
                     <!-- Recommendations injected here by JS -->
@@ -254,11 +263,8 @@
             let riskScore = Math.max(0, Math.min(100, Math.round(baseRisk + noise)));
             
             patients.push({
-                id: `PT-${1000 + i}`,
-                age: Math.floor(Math.random() * 35) + 60,
-                hippocampusVol: volPercentile,
-                riskScore: riskScore,
-                isCurrentPatient: false
+                id: `PT-${1000 + i}`, age: Math.floor(Math.random() * 35) + 60,
+                hippocampusVol: volPercentile, riskScore: riskScore, isCurrentPatient: false
             });
         }
 
@@ -266,27 +272,11 @@
         const ctx = document.getElementById('riskChart').getContext('2d');
         let riskChart = new Chart(ctx, {
             type: 'scatter',
-            data: {
-                datasets: [{
-                    label: 'Patients', data: [], backgroundColor: [], borderColor: [],
-                    borderWidth: [], pointRadius: [], pointHoverRadius: 8
-                }]
-            },
+            data: { datasets: [{ label: 'Patients', data: [], backgroundColor: [], borderColor: [], borderWidth: [], pointRadius: [], pointHoverRadius: 8 }] },
             options: {
                 responsive: true, maintainAspectRatio: false,
-                plugins: {
-                    tooltip: {
-                        callbacks: {
-                            label: (ctx) => ctx.raw.isCurrentPatient 
-                                ? `CURRENT PATIENT | Vol: ${ctx.raw.x}th pct | AI Risk: ${ctx.raw.y}%` 
-                                : `Vol: ${ctx.raw.x}th pct | AI Risk: ${ctx.raw.y}%`
-                        }
-                    }
-                },
-                scales: {
-                    x: { title: { display: true, text: 'Hippocampal Volume (Percentile)' }, min: 0, max: 100 },
-                    y: { title: { display: true, text: 'AI Detected Risk Score (%)' }, min: 0, max: 100 }
-                }
+                plugins: { tooltip: { callbacks: { label: (ctx) => ctx.raw.isCurrentPatient ? `CURRENT PATIENT | Vol: ${ctx.raw.x}th pct | AI Risk: ${ctx.raw.y}%` : `Vol: ${ctx.raw.x}th pct | AI Risk: ${ctx.raw.y}%` } } },
+                scales: { x: { title: { display: true, text: 'Hippocampal Volume (Percentile)' }, min: 0, max: 100 }, y: { title: { display: true, text: 'AI Detected Risk Score (%)' }, min: 0, max: 100 } }
             }
         });
 
@@ -301,8 +291,7 @@
             document.getElementById('thresholdVal').textContent = threshold;
 
             const filteredPatients = patients.filter(p => p.age >= minAge);
-            let aboveRiskCount = 0;
-            let totalRisk = 0;
+            let aboveRiskCount = 0; let totalRisk = 0;
 
             const chartData = filteredPatients.map(p => {
                 const isAtRisk = p.riskScore >= threshold;
@@ -310,24 +299,16 @@
                 totalRisk += p.riskScore;
 
                 let bgColor = isAtRisk ? '#ef4444' : '#3b82f6';
-                let bColor = 'transparent';
-                let bWidth = 0;
-                let radius = 6;
+                let bColor = 'transparent'; let bWidth = 0; let radius = 6;
 
-                if (p.isCurrentPatient) {
-                    bgColor = '#fbbf24'; bColor = '#000000'; bWidth = 2; radius = 10;
-                }
+                if (p.isCurrentPatient) { bgColor = '#fbbf24'; bColor = '#000000'; bWidth = 2; radius = 10; }
 
-                return {
-                    x: p.hippocampusVol, y: p.riskScore, isCurrentPatient: p.isCurrentPatient,
-                    backgroundColor: bgColor, borderColor: bColor, borderWidth: bWidth, pointRadius: radius
-                };
+                return { x: p.hippocampusVol, y: p.riskScore, isCurrentPatient: p.isCurrentPatient, backgroundColor: bgColor, borderColor: bColor, borderWidth: bWidth, pointRadius: radius };
             });
 
             document.getElementById('kpi-total').textContent = filteredPatients.length;
             document.getElementById('kpi-risk').textContent = aboveRiskCount;
-            document.getElementById('kpi-avg').textContent = filteredPatients.length > 0 
-                ? Math.round(totalRisk / filteredPatients.length) + '%' : '0%';
+            document.getElementById('kpi-avg').textContent = filteredPatients.length > 0 ? Math.round(totalRisk / filteredPatients.length) + '%' : '0%';
 
             riskChart.data.datasets[0].data = chartData;
             riskChart.data.datasets[0].backgroundColor = chartData.map(d => d.backgroundColor);
@@ -337,20 +318,78 @@
             riskChart.update();
         }
 
-        // 4. Generate Personalized Action Plan
+        // 4. Generate Personalized Action Plan & Medication
         function generateActionPlan() {
             const container = document.getElementById('dynamic-recommendations');
             let html = "";
 
-            // Baseline Cognitive Advice (Always applies)
+            // --- STAGE DEFINITION ---
+            let stageName = "";
+            let stageColor = "";
+            let stageDesc = "";
+            let medsHtml = "";
+
+            if (currentPatientData.risk < 50) {
+                stageName = "Normal Cognitive Aging";
+                stageColor = "var(--success)";
+                stageDesc = "AI analysis of behavioral and structural markers indicates a healthy cognitive profile for this age group. Focus on preventative lifestyle maintenance.";
+                medsHtml = `<p>No prescription Alzheimer's medications are clinically indicated at this stage. Focus on neuro-protective lifestyle interventions.</p>`;
+            } 
+            else if (currentPatientData.risk >= 50 && currentPatientData.risk < 75) {
+                stageName = "Mild Cognitive Impairment (MCI) / Early Alzheimer's";
+                stageColor = "var(--warning)";
+                stageDesc = "AI analysis indicates early structural volume loss and pattern changes consistent with Mild Cognitive Impairment (MCI) or early-stage Alzheimer's disease. Early intervention is critical to slow progression.";
+                
+                medsHtml = `
+                    <div class="med-card">
+                        <strong><a href="https://www.alz.org/alzheimers-dementia/treatments/donanemab" target="_blank">Kisunla® (donanemab)</a> OR <a href="https://www.alz.org/alzheimers-dementia/treatments/lecanemab-leqembi" target="_blank">Leqembi® (lecanemab)</a></strong><br/>
+                        <em>Targeted Anti-Amyloid Therapy (Intravenous/Subcutaneous)</em>
+                        <p style="font-size: 0.9rem; margin-top: 5px;">These monoclonal antibodies are FDA-approved specifically for early-stage Alzheimer's to clear amyloid plaques from the brain, potentially slowing cognitive decline by 27-35%.</p>
+                        <span class="med-warning"><strong>⚠️ Known Side Effects:</strong> Amyloid-Related Imaging Abnormalities (ARIA) including temporary brain swelling or bleeding. Also headache, confusion, and infusion-related immune reactions.</span>
+                    </div>
+                    <div class="med-card">
+                        <strong><a href="https://www.alz.org/alzheimers-dementia/treatments/medications-for-memory" target="_blank">Aricept® (donepezil)</a> OR <a href="https://www.alz.org/alzheimers-dementia/treatments/medications-for-memory" target="_blank">Zunveyl® (benzgalantamine)</a></strong><br/>
+                        <em>Cholinesterase Inhibitors (Oral Pill)</em>
+                        <p style="font-size: 0.9rem; margin-top: 5px;">Supports communication between nerve cells by preventing the breakdown of acetylcholine to treat memory symptoms.</p>
+                        <span class="med-warning"><strong>⚠️ Known Side Effects:</strong> Nausea, vomiting, loss of appetite, muscle cramps, and increased frequency of bowel movements.</span>
+                    </div>
+                `;
+            } 
+            else {
+                stageName = "Moderate to Severe Alzheimer's Disease";
+                stageColor = "var(--accent)";
+                stageDesc = "AI analysis indicates significant structural progression and cognitive markers consistent with moderate to severe Alzheimer's disease. Focus is on symptom management, safety, and quality of life.";
+                
+                medsHtml = `
+                    <div class="med-card">
+                        <strong><a href="https://www.alz.org/alzheimers-dementia/treatments/medications-for-memory" target="_blank">Namzaric® (memantine + donepezil)</a></strong><br/>
+                        <em>Combination Glutamate Regulator & Cholinesterase Inhibitor</em>
+                        <p style="font-size: 0.9rem; margin-top: 5px;">A combination drug designed for moderate-to-severe stages to improve information processing and cell communication.</p>
+                        <span class="med-warning"><strong>⚠️ Known Side Effects:</strong> Headache, constipation, confusion, dizziness, and nausea.</span>
+                    </div>
+                    <div class="med-card">
+                        <strong><a href="https://www.alz.org/alzheimers-dementia/treatments/medications-for-memory" target="_blank">Rexulti® (brexpiprazole)</a></strong> <em>(If experiencing agitation)</em><br/>
+                        <em>Atypical Antipsychotic</em>
+                        <p style="font-size: 0.9rem; margin-top: 5px;">FDA-approved specifically for the treatment of agitation associated with dementia due to Alzheimer's disease.</p>
+                        <span class="med-warning"><strong>⚠️ Known Side Effects:</strong> Weight gain, sleepiness, dizziness. <strong>Black Box Warning:</strong> Increased risk of death in older adults with dementia-related psychosis.</span>
+                    </div>
+                `;
+            }
+
+            // Update UI with Stage
+            document.getElementById('displayStage').textContent = stageName;
+            document.getElementById('displayStage').style.color = stageColor;
+            document.getElementById('stageDescription').textContent = stageDesc;
+
+            // Render Medications
             html += `
-                <div class="action-item">
-                    <h4>🧠 Cognitive Stimulation (Neuroplasticity)</h4>
-                    <p>Engage in complex, novel activities to build cognitive reserve. We recommend daily activities that force learning: practicing a new language, learning an instrument, or engaging in high-level spatial puzzles (like advanced Sudoku or strategy games) for 30 minutes a day.</p>
+                <div class="action-item" style="border-left-color: ${stageColor};">
+                    <h4>💊 Recommended Pharmacological Interventions</h4>
+                    ${medsHtml}
                 </div>
             `;
 
-            // Diet-based Advice
+            // Render Lifestyle Advice based on Intake
             if (currentPatientData.diet === 'Poor' || currentPatientData.diet === 'Average') {
                 html += `
                     <div class="action-item" style="border-left-color: #f97316;">
@@ -358,41 +397,22 @@
                         <p>Your current eating habits may be contributing to neuroinflammation. Transition strictly to the MIND Diet: prioritize dark leafy greens, berries (especially blueberries), nuts, and fatty fish high in Omega-3s. Significantly reduce red meat, butter, and processed sweets.</p>
                     </div>
                 `;
-            } else {
-                html += `
-                    <div class="action-item" style="border-left-color: #10b981;">
-                        <h4>🥗 Maintain Neuro-Protective Diet</h4>
-                        <p>Excellent work maintaining a healthy diet. Continue prioritizing antioxidants and Omega-3 fatty acids. Consider adding a high-quality DHA supplement to further protect structural cell membranes in the brain.</p>
-                    </div>
-                `;
             }
 
-            // Cardiovascular-based Advice
             if (currentPatientData.cardio) {
                 html += `
                     <div class="action-item" style="border-left-color: #ef4444;">
                         <h4>🫀 Vascular Dementia Prevention</h4>
-                        <p>Due to your cardiovascular history, optimizing blood flow to the brain is critical. Aim for 150 minutes of moderate aerobic exercise weekly (brisk walking, swimming) and work closely with your physician to keep blood pressure strictly under 120/80 to prevent micro-vascular brain damage.</p>
+                        <p>Due to your cardiovascular history, optimizing blood flow to the brain is critical. Aim for 150 minutes of moderate aerobic exercise weekly and work closely with your physician to keep blood pressure strictly under 120/80.</p>
                     </div>
                 `;
             }
 
-            // Metabolic-based Advice
             if (currentPatientData.metabolic) {
                 html += `
                     <div class="action-item" style="border-left-color: #8b5cf6;">
                         <h4>🩸 Metabolic Brain Protection ("Type 3 Diabetes")</h4>
-                        <p>Alzheimer's is often heavily linked to insulin resistance in the brain. Focus on strict glycemic control. Consider working with a nutritionist on a low-glycemic or mild ketogenic diet, as ketones provide an alternative energy source for struggling brain cells.</p>
-                    </div>
-                `;
-            }
-
-            // Trauma-based Advice
-            if (currentPatientData.trauma) {
-                html += `
-                    <div class="action-item" style="border-left-color: #64748b;">
-                        <h4>🛡️ Post-Trauma Brain Clearance</h4>
-                        <p>A history of head trauma increases the risk of amyloid plaque build-up. Prioritize strict sleep hygiene (7-9 hours per night) to allow the brain's <em>glymphatic system</em> to clear out neurotoxins. Avoid any activities with a risk of further concussive impact.</p>
+                        <p>Alzheimer's is often heavily linked to insulin resistance in the brain. Focus on strict glycemic control. Consider working with a nutritionist on a low-glycemic diet.</p>
                     </div>
                 `;
             }
@@ -414,10 +434,9 @@
             }
         }
 
-        // 6. Form Submission Logic with Validation Alerts
+        // 6. Form Submission & Validation
         document.getElementById('calcBtn').addEventListener('click', function() {
             
-            // EXPLICIT VALIDATION
             const ageInput = document.getElementById('pAge').value;
             const heightInput = document.getElementById('pHeight').value;
 
@@ -425,7 +444,6 @@
                 alert("Please enter both Age and Height to proceed.");
                 return;
             }
-
             if (ageInput < 30 || ageInput > 110) {
                 alert("Please enter a valid age between 30 and 110.");
                 return;
@@ -451,6 +469,8 @@
             if (currentPatientData.trauma) risk += 25;
 
             risk = Math.max(5, Math.min(95, Math.round(risk)));
+            currentPatientData.risk = risk; // Store for staging logic
+            
             let mockHippocampus = Math.max(5, Math.min(95, Math.round(100 - risk + (Math.random() * 10 - 5))));
 
             // Add to dataset
@@ -468,13 +488,13 @@
                 ageFilter.value = Math.max(40, currentPatientData.age - 5);
             }
 
-            // Generate the personalized plan based on data
+            // Generate plan based on the computed risk stage
             generateActionPlan();
 
             // Switch Views
             document.getElementById('intake-view').classList.add('hidden');
             document.getElementById('app-container').classList.remove('hidden');
-            showView('actionPlan'); // Default to showing the plan first
+            showView('actionPlan'); // Default to plan
             
             updateDashboard();
         });
