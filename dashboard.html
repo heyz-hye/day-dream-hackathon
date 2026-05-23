@@ -1,0 +1,488 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Alzheimer's Detection & Prevention Platform</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --primary: #1e3a8a;
+            --secondary: #3b82f6;
+            --accent: #ef4444;
+            --highlight: #fbbf24;
+            --success: #10b981;
+            --bg: #f8fafc;
+            --surface: #ffffff;
+            --text: #0f172a;
+            --text-light: #64748b;
+            --border: #e2e8f0;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        body { background-color: var(--bg); color: var(--text); line-height: 1.6; padding: 20px; }
+        .hidden { display: none !important; }
+
+        /* Header */
+        header {
+            background-color: var(--primary); color: white; padding: 30px; border-radius: 12px;
+            margin-bottom: 20px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); text-align: center;
+        }
+        h1 { margin-bottom: 10px; }
+        .mission { font-style: italic; font-size: 1.1rem; opacity: 0.9; max-width: 900px; margin: 0 auto;}
+
+        /* Intake Form */
+        #intake-view {
+            max-width: 600px; margin: 40px auto; background: var(--surface); padding: 30px;
+            border-radius: 12px; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+        }
+        #intake-view h2 { text-align: center; margin-bottom: 20px; color: var(--primary); }
+        .form-group { margin-bottom: 15px; }
+        .form-group label { display: block; font-weight: bold; margin-bottom: 5px; color: var(--text); }
+        .form-group input[type="number"], .form-group select {
+            width: 100%; padding: 10px; border: 1px solid var(--border); border-radius: 6px; font-size: 1rem;
+        }
+        .checkbox-group { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+        .checkbox-group input { width: 18px; height: 18px; cursor: pointer; }
+
+        /* Buttons */
+        .btn {
+            display: inline-block; width: 100%; background: var(--secondary); color: white; border: none;
+            padding: 12px; font-size: 1.1rem; font-weight: bold; border-radius: 6px; cursor: pointer;
+            margin-top: 15px; text-align: center; transition: background 0.2s; text-decoration: none;
+        }
+        .btn:hover { background: #2563eb; }
+        .btn-outline { background: transparent; border: 2px solid var(--secondary); color: var(--secondary); }
+        .btn-outline:hover { background: var(--secondary); color: white; }
+        .btn-action { background: var(--success); }
+        .btn-action:hover { background: #059669; }
+
+        /* Grid Layout */
+        .grid-container { display: grid; grid-template-columns: 1fr 2fr; gap: 20px; }
+        @media (max-width: 1024px) { .grid-container { grid-template-columns: 1fr; } }
+
+        /* Cards */
+        .card {
+            background-color: var(--surface); padding: 24px; border-radius: 12px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05); margin-bottom: 20px;
+        }
+        .card h2 { color: var(--primary); margin-bottom: 16px; border-bottom: 2px solid var(--border); padding-bottom: 8px;}
+        .card h3 { color: var(--secondary); margin-top: 16px; margin-bottom: 8px; font-size: 1.1rem;}
+        .card ul { margin-left: 20px; color: var(--text-light); }
+        .card li { margin-bottom: 8px; }
+
+        /* Dashboard UI */
+        .kpi-container { display: flex; gap: 15px; margin-bottom: 20px; }
+        .kpi-box {
+            flex: 1; background: #f1f5f9; padding: 15px; border-radius: 8px;
+            text-align: center; border-left: 4px solid var(--secondary);
+        }
+        .kpi-box.alert { border-left-color: var(--accent); }
+        .kpi-value { font-size: 1.8rem; font-weight: bold; color: var(--primary); }
+        .kpi-label { font-size: 0.9rem; color: var(--text-light); text-transform: uppercase;}
+
+        .controls { display: flex; gap: 20px; margin-bottom: 20px; background: #f1f5f9; padding: 15px; border-radius: 8px; }
+        .control-group { flex: 1; display: flex; flex-direction: column; }
+        .control-group label { font-weight: bold; margin-bottom: 5px; color: var(--text-light); font-size: 0.9rem;}
+        input[type="range"] { width: 100%; cursor: pointer;}
+        .chart-container { position: relative; height: 400px; width: 100%; }
+        
+        .legend { margin-top: 15px; font-size: 0.9rem; display: flex; gap: 15px; justify-content: center;}
+        .legend span { display: flex; align-items: center; gap: 5px; }
+        .dot { width: 12px; height: 12px; border-radius: 50%; display: inline-block; }
+
+        /* Action Plan View */
+        .action-item {
+            background: #f8fafc; border-left: 5px solid var(--secondary); padding: 15px;
+            margin-bottom: 15px; border-radius: 0 8px 8px 0;
+        }
+        .action-item h4 { color: var(--primary); margin-bottom: 5px; }
+        .action-item p { color: var(--text-light); font-size: 0.95rem; }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>NeuroAI: Alzheimer's Predictive Platform</h1>
+        <p class="mission">"To democratize early Alzheimer's detection by harnessing multimodal artificial intelligence to identify predictive biological, structural, and behavioral patterns years before clinical symptoms emerge, empowering proactive intervention and precision care."</p>
+    </header>
+
+    <!-- INTAKE / LOGIN VIEW -->
+    <div id="intake-view">
+        <h2>New Patient Assessment</h2>
+        <form id="patientForm">
+            <div class="form-group">
+                <label>Age</label>
+                <input type="number" id="pAge" placeholder="e.g., 72">
+            </div>
+            
+            <div style="display: flex; gap: 15px;">
+                <div class="form-group" style="flex: 1;">
+                    <label>Height (cm)</label>
+                    <input type="number" id="pHeight" placeholder="e.g., 170">
+                </div>
+                <div class="form-group" style="flex: 1;">
+                    <label>Gender</label>
+                    <select id="pGender">
+                        <option value="Male">Male</option>
+                        <option value="Female">Female</option>
+                        <option value="Other">Other</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>Diet & Eating Habits</label>
+                <select id="pDiet">
+                    <option value="Healthy">Healthy (Mediterranean/MIND diet aligned)</option>
+                    <option value="Average">Average (Standard Diet)</option>
+                    <option value="Poor">Poor (High sugar, highly processed)</option>
+                </select>
+            </div>
+
+            <div class="form-group" style="margin-top: 20px;">
+                <label>Past Medical History (Select all that apply)</label>
+                <div class="checkbox-group">
+                    <input type="checkbox" id="pmhCardio">
+                    <label for="pmhCardio">Cardiovascular Disease (Hypertension, CAD)</label>
+                </div>
+                <div class="checkbox-group">
+                    <input type="checkbox" id="pmhMetabolic">
+                    <label for="pmhMetabolic">Metabolic Disorders (Type II Diabetes, Obesity)</label>
+                </div>
+                <div class="checkbox-group">
+                    <input type="checkbox" id="pmhTrauma">
+                    <label for="pmhTrauma">History of Traumatic Brain Injury (TBI)</label>
+                </div>
+            </div>
+
+            <!-- Changed to type="button" to handle validation purely in JS -->
+            <button type="button" id="calcBtn" class="btn">Calculate AI Risk & Enter Dashboard</button>
+        </form>
+    </div>
+
+    <!-- MAIN APP CONTAINER -->
+    <div id="app-container" class="hidden grid-container">
+        <!-- Left Column: Shared Panel -->
+        <div class="left-col">
+            <div class="card" style="border-top: 4px solid var(--highlight); background: #fdfce8;">
+                <h2 style="color: #b45309;">Patient Profile</h2>
+                <p><strong>Age:</strong> <span id="displayAge"></span> | <strong>Gender:</strong> <span id="displayGender"></span></p>
+                <p><strong>AI Risk Score:</strong> <strong style="color: var(--accent); font-size: 1.2rem;" id="displayRisk"></strong></p>
+                
+                <!-- Navigation Buttons -->
+                <button onclick="showView('dashboard')" class="btn btn-outline" style="margin-top: 20px;">View Cohort Dashboard</button>
+                <button onclick="showView('actionPlan')" class="btn btn-action">View Personalized Action Plan</button>
+                <button onclick="location.reload()" class="btn" style="background: var(--text-light);">Start New Assessment</button>
+            </div>
+
+            <div class="card">
+                <h2>Clinical Partners</h2>
+                <ul>
+                    <li><strong>Davos Alzheimer's Collaborative (DAC):</strong> Global biomarker data sharing.</li>
+                    <li><strong>ADNI:</strong> Gold-standard repository for MRI/PET data.</li>
+                    <li><strong>Tempus AI / Regenstrief:</strong> Applying multimodal AI to genomic and EHR data.</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Right Column Dynamic Area -->
+        <div class="right-col">
+            
+            <!-- DASHBOARD VIEW -->
+            <div id="dashboard-view" class="card">
+                <h2>Population Cohort Explorer</h2>
+                <div class="kpi-container">
+                    <div class="kpi-box">
+                        <div class="kpi-value" id="kpi-total">100</div>
+                        <div class="kpi-label">Patients in View</div>
+                    </div>
+                    <div class="kpi-box alert">
+                        <div class="kpi-value" id="kpi-risk" style="color: var(--accent);">0</div>
+                        <div class="kpi-label">Above Risk Threshold</div>
+                    </div>
+                    <div class="kpi-box">
+                        <div class="kpi-value" id="kpi-avg">0%</div>
+                        <div class="kpi-label">Avg AI Risk</div>
+                    </div>
+                </div>
+
+                <div class="controls">
+                    <div class="control-group">
+                        <label for="ageFilter">Show Min Age: <span id="ageVal">60</span> yrs</label>
+                        <input type="range" id="ageFilter" min="40" max="95" value="60">
+                    </div>
+                    <div class="control-group">
+                        <label for="riskThreshold">Risk Alert Threshold: <span id="thresholdVal">70</span>%</label>
+                        <input type="range" id="riskThreshold" min="0" max="100" value="70">
+                    </div>
+                </div>
+
+                <div class="chart-container">
+                    <canvas id="riskChart"></canvas>
+                </div>
+                <div class="legend">
+                    <span><div class="dot" style="background: var(--secondary);"></div> Standard Risk</span>
+                    <span><div class="dot" style="background: var(--accent);"></div> High Risk</span>
+                    <span><div class="dot" style="background: var(--highlight); border: 2px solid #000;"></div> Current Patient</span>
+                </div>
+            </div>
+
+            <!-- ACTION PLAN VIEW -->
+            <div id="actionplan-view" class="card hidden">
+                <h2>AI-Generated Cognitive Care Plan</h2>
+                <p style="margin-bottom: 20px; color: var(--text-light);">Based on the patient's specific health profile and AI risk assessment, the following proactive interventions are recommended to support brain health and build cognitive reserve.</p>
+                
+                <div id="dynamic-recommendations">
+                    <!-- Recommendations injected here by JS -->
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        // 1. App State
+        let currentPatientData = {};
+        let patients = [];
+
+        // 2. Generate Dummy Patient Cohort Data
+        for (let i = 0; i < 150; i++) {
+            const volPercentile = Math.floor(Math.random() * 90) + 10; 
+            const baseRisk = 100 - volPercentile;
+            const noise = (Math.random() * 20) - 10;
+            let riskScore = Math.max(0, Math.min(100, Math.round(baseRisk + noise)));
+            
+            patients.push({
+                id: `PT-${1000 + i}`,
+                age: Math.floor(Math.random() * 35) + 60,
+                hippocampusVol: volPercentile,
+                riskScore: riskScore,
+                isCurrentPatient: false
+            });
+        }
+
+        // 3. Setup Chart.js
+        const ctx = document.getElementById('riskChart').getContext('2d');
+        let riskChart = new Chart(ctx, {
+            type: 'scatter',
+            data: {
+                datasets: [{
+                    label: 'Patients', data: [], backgroundColor: [], borderColor: [],
+                    borderWidth: [], pointRadius: [], pointHoverRadius: 8
+                }]
+            },
+            options: {
+                responsive: true, maintainAspectRatio: false,
+                plugins: {
+                    tooltip: {
+                        callbacks: {
+                            label: (ctx) => ctx.raw.isCurrentPatient 
+                                ? `CURRENT PATIENT | Vol: ${ctx.raw.x}th pct | AI Risk: ${ctx.raw.y}%` 
+                                : `Vol: ${ctx.raw.x}th pct | AI Risk: ${ctx.raw.y}%`
+                        }
+                    }
+                },
+                scales: {
+                    x: { title: { display: true, text: 'Hippocampal Volume (Percentile)' }, min: 0, max: 100 },
+                    y: { title: { display: true, text: 'AI Detected Risk Score (%)' }, min: 0, max: 100 }
+                }
+            }
+        });
+
+        const ageFilter = document.getElementById('ageFilter');
+        const riskThreshold = document.getElementById('riskThreshold');
+
+        function updateDashboard() {
+            const minAge = parseInt(ageFilter.value);
+            const threshold = parseInt(riskThreshold.value);
+
+            document.getElementById('ageVal').textContent = minAge;
+            document.getElementById('thresholdVal').textContent = threshold;
+
+            const filteredPatients = patients.filter(p => p.age >= minAge);
+            let aboveRiskCount = 0;
+            let totalRisk = 0;
+
+            const chartData = filteredPatients.map(p => {
+                const isAtRisk = p.riskScore >= threshold;
+                if (isAtRisk) aboveRiskCount++;
+                totalRisk += p.riskScore;
+
+                let bgColor = isAtRisk ? '#ef4444' : '#3b82f6';
+                let bColor = 'transparent';
+                let bWidth = 0;
+                let radius = 6;
+
+                if (p.isCurrentPatient) {
+                    bgColor = '#fbbf24'; bColor = '#000000'; bWidth = 2; radius = 10;
+                }
+
+                return {
+                    x: p.hippocampusVol, y: p.riskScore, isCurrentPatient: p.isCurrentPatient,
+                    backgroundColor: bgColor, borderColor: bColor, borderWidth: bWidth, pointRadius: radius
+                };
+            });
+
+            document.getElementById('kpi-total').textContent = filteredPatients.length;
+            document.getElementById('kpi-risk').textContent = aboveRiskCount;
+            document.getElementById('kpi-avg').textContent = filteredPatients.length > 0 
+                ? Math.round(totalRisk / filteredPatients.length) + '%' : '0%';
+
+            riskChart.data.datasets[0].data = chartData;
+            riskChart.data.datasets[0].backgroundColor = chartData.map(d => d.backgroundColor);
+            riskChart.data.datasets[0].borderColor = chartData.map(d => d.borderColor);
+            riskChart.data.datasets[0].borderWidth = chartData.map(d => d.borderWidth);
+            riskChart.data.datasets[0].pointRadius = chartData.map(d => d.pointRadius);
+            riskChart.update();
+        }
+
+        // 4. Generate Personalized Action Plan
+        function generateActionPlan() {
+            const container = document.getElementById('dynamic-recommendations');
+            let html = "";
+
+            // Baseline Cognitive Advice (Always applies)
+            html += `
+                <div class="action-item">
+                    <h4>🧠 Cognitive Stimulation (Neuroplasticity)</h4>
+                    <p>Engage in complex, novel activities to build cognitive reserve. We recommend daily activities that force learning: practicing a new language, learning an instrument, or engaging in high-level spatial puzzles (like advanced Sudoku or strategy games) for 30 minutes a day.</p>
+                </div>
+            `;
+
+            // Diet-based Advice
+            if (currentPatientData.diet === 'Poor' || currentPatientData.diet === 'Average') {
+                html += `
+                    <div class="action-item" style="border-left-color: #f97316;">
+                        <h4>🥗 Nutritional Pivot Required (MIND Diet)</h4>
+                        <p>Your current eating habits may be contributing to neuroinflammation. Transition strictly to the MIND Diet: prioritize dark leafy greens, berries (especially blueberries), nuts, and fatty fish high in Omega-3s. Significantly reduce red meat, butter, and processed sweets.</p>
+                    </div>
+                `;
+            } else {
+                html += `
+                    <div class="action-item" style="border-left-color: #10b981;">
+                        <h4>🥗 Maintain Neuro-Protective Diet</h4>
+                        <p>Excellent work maintaining a healthy diet. Continue prioritizing antioxidants and Omega-3 fatty acids. Consider adding a high-quality DHA supplement to further protect structural cell membranes in the brain.</p>
+                    </div>
+                `;
+            }
+
+            // Cardiovascular-based Advice
+            if (currentPatientData.cardio) {
+                html += `
+                    <div class="action-item" style="border-left-color: #ef4444;">
+                        <h4>🫀 Vascular Dementia Prevention</h4>
+                        <p>Due to your cardiovascular history, optimizing blood flow to the brain is critical. Aim for 150 minutes of moderate aerobic exercise weekly (brisk walking, swimming) and work closely with your physician to keep blood pressure strictly under 120/80 to prevent micro-vascular brain damage.</p>
+                    </div>
+                `;
+            }
+
+            // Metabolic-based Advice
+            if (currentPatientData.metabolic) {
+                html += `
+                    <div class="action-item" style="border-left-color: #8b5cf6;">
+                        <h4>🩸 Metabolic Brain Protection ("Type 3 Diabetes")</h4>
+                        <p>Alzheimer's is often heavily linked to insulin resistance in the brain. Focus on strict glycemic control. Consider working with a nutritionist on a low-glycemic or mild ketogenic diet, as ketones provide an alternative energy source for struggling brain cells.</p>
+                    </div>
+                `;
+            }
+
+            // Trauma-based Advice
+            if (currentPatientData.trauma) {
+                html += `
+                    <div class="action-item" style="border-left-color: #64748b;">
+                        <h4>🛡️ Post-Trauma Brain Clearance</h4>
+                        <p>A history of head trauma increases the risk of amyloid plaque build-up. Prioritize strict sleep hygiene (7-9 hours per night) to allow the brain's <em>glymphatic system</em> to clear out neurotoxins. Avoid any activities with a risk of further concussive impact.</p>
+                    </div>
+                `;
+            }
+
+            container.innerHTML = html;
+        }
+
+        // 5. View Controller
+        function showView(viewName) {
+            const dash = document.getElementById('dashboard-view');
+            const plan = document.getElementById('actionplan-view');
+            
+            if (viewName === 'dashboard') {
+                dash.classList.remove('hidden');
+                plan.classList.add('hidden');
+            } else {
+                dash.classList.add('hidden');
+                plan.classList.remove('hidden');
+            }
+        }
+
+        // 6. Form Submission Logic with Validation Alerts
+        document.getElementById('calcBtn').addEventListener('click', function() {
+            
+            // EXPLICIT VALIDATION
+            const ageInput = document.getElementById('pAge').value;
+            const heightInput = document.getElementById('pHeight').value;
+
+            if (!ageInput || !heightInput) {
+                alert("Please enter both Age and Height to proceed.");
+                return;
+            }
+
+            if (ageInput < 30 || ageInput > 110) {
+                alert("Please enter a valid age between 30 and 110.");
+                return;
+            }
+
+            // Save state
+            currentPatientData = {
+                age: parseInt(ageInput),
+                gender: document.getElementById('pGender').value,
+                diet: document.getElementById('pDiet').value,
+                cardio: document.getElementById('pmhCardio').checked,
+                metabolic: document.getElementById('pmhMetabolic').checked,
+                trauma: document.getElementById('pmhTrauma').checked
+            };
+
+            // Calculate mock risk
+            let risk = 20;
+            if (currentPatientData.age > 65) risk += (currentPatientData.age - 65) * 1.5; 
+            if (currentPatientData.diet === 'Poor') risk += 15;
+            if (currentPatientData.diet === 'Healthy') risk -= 10;
+            if (currentPatientData.cardio) risk += 12;
+            if (currentPatientData.metabolic) risk += 15;
+            if (currentPatientData.trauma) risk += 25;
+
+            risk = Math.max(5, Math.min(95, Math.round(risk)));
+            let mockHippocampus = Math.max(5, Math.min(95, Math.round(100 - risk + (Math.random() * 10 - 5))));
+
+            // Add to dataset
+            patients.push({
+                id: 'CURRENT_PT', age: currentPatientData.age,
+                hippocampusVol: mockHippocampus, riskScore: risk, isCurrentPatient: true
+            });
+
+            // Update UI
+            document.getElementById('displayAge').textContent = currentPatientData.age;
+            document.getElementById('displayGender').textContent = currentPatientData.gender;
+            document.getElementById('displayRisk').textContent = risk + '%';
+
+            if(currentPatientData.age < parseInt(ageFilter.value)) {
+                ageFilter.value = Math.max(40, currentPatientData.age - 5);
+            }
+
+            // Generate the personalized plan based on data
+            generateActionPlan();
+
+            // Switch Views
+            document.getElementById('intake-view').classList.add('hidden');
+            document.getElementById('app-container').classList.remove('hidden');
+            showView('actionPlan'); // Default to showing the plan first
+            
+            updateDashboard();
+        });
+
+        // Listeners for sliders
+        ageFilter.addEventListener('input', updateDashboard);
+        riskThreshold.addEventListener('input', updateDashboard);
+
+    </script>
+</body>
+</html>
