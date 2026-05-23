@@ -323,7 +323,7 @@
             const container = document.getElementById('dynamic-recommendations');
             let html = "";
 
-            // --- STAGE DEFINITION ---
+            // --- STAGE DEFINITION & MEDICATIONS ---
             let stageName = "";
             let stageColor = "";
             let stageDesc = "";
@@ -381,7 +381,7 @@
             document.getElementById('displayStage').style.color = stageColor;
             document.getElementById('stageDescription').textContent = stageDesc;
 
-            // Render Medications
+            // 1. Render Medications Block First
             html += `
                 <div class="action-item" style="border-left-color: ${stageColor};">
                     <h4>💊 Recommended Pharmacological Interventions</h4>
@@ -389,7 +389,15 @@
                 </div>
             `;
 
-            // Render Lifestyle Advice based on Intake
+            // 2. Render Baseline Cognitive Advice (Always applies)
+            html += `
+                <div class="action-item" style="border-left-color: #8b5cf6;">
+                    <h4>🧠 Cognitive Stimulation (Neuroplasticity)</h4>
+                    <p>Engage in complex, novel activities to build cognitive reserve. We recommend daily activities that force learning: practicing a new language, learning an instrument, or engaging in high-level spatial puzzles (like advanced Sudoku or strategy games) for 30 minutes a day.</p>
+                </div>
+            `;
+
+            // 3. Render Diet Advice
             if (currentPatientData.diet === 'Poor' || currentPatientData.diet === 'Average') {
                 html += `
                     <div class="action-item" style="border-left-color: #f97316;">
@@ -397,8 +405,16 @@
                         <p>Your current eating habits may be contributing to neuroinflammation. Transition strictly to the MIND Diet: prioritize dark leafy greens, berries (especially blueberries), nuts, and fatty fish high in Omega-3s. Significantly reduce red meat, butter, and processed sweets.</p>
                     </div>
                 `;
+            } else {
+                html += `
+                    <div class="action-item" style="border-left-color: #10b981;">
+                        <h4>🥗 Maintain Neuro-Protective Diet</h4>
+                        <p>Excellent work maintaining a healthy diet. Continue prioritizing antioxidants and Omega-3 fatty acids to protect structural cell membranes in the brain.</p>
+                    </div>
+                `;
             }
 
+            // 4. Render Physical Exercise / Cardio Advice
             if (currentPatientData.cardio) {
                 html += `
                     <div class="action-item" style="border-left-color: #ef4444;">
@@ -406,13 +422,31 @@
                         <p>Due to your cardiovascular history, optimizing blood flow to the brain is critical. Aim for 150 minutes of moderate aerobic exercise weekly and work closely with your physician to keep blood pressure strictly under 120/80.</p>
                     </div>
                 `;
+            } else {
+                html += `
+                    <div class="action-item" style="border-left-color: var(--secondary);">
+                        <h4>🏃‍♂️ Baseline Physical Exercise</h4>
+                        <p>Maintain consistent physical activity. Aim for at least 150 minutes of moderate aerobic exercise (such as brisk walking or swimming) and 2 days of strength training weekly to support healthy blood flow to the brain.</p>
+                    </div>
+                `;
             }
 
+            // 5. Render Metabolic Advice
             if (currentPatientData.metabolic) {
                 html += `
                     <div class="action-item" style="border-left-color: #8b5cf6;">
                         <h4>🩸 Metabolic Brain Protection ("Type 3 Diabetes")</h4>
                         <p>Alzheimer's is often heavily linked to insulin resistance in the brain. Focus on strict glycemic control. Consider working with a nutritionist on a low-glycemic diet.</p>
+                    </div>
+                `;
+            }
+
+            // 6. Render Trauma Advice
+            if (currentPatientData.trauma) {
+                html += `
+                    <div class="action-item" style="border-left-color: #64748b;">
+                        <h4>🛡️ Post-Trauma Brain Clearance</h4>
+                        <p>A history of head trauma increases the risk of amyloid plaque build-up. Prioritize strict sleep hygiene (7-9 hours per night) to allow the brain's <em>glymphatic system</em> to clear out neurotoxins. Avoid any activities with a risk of further concussive impact.</p>
                     </div>
                 `;
             }
